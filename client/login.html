@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录 · 情绪储存罐</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js -->
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <style>
+    /* 心形图标颜色 */
+    .heart { color: #ec4899; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-pink-100 via-purple-100 to-pink-50 min-h-screen flex items-center justify-center">
+
+  <div class="bg-white bg-opacity-80 backdrop-blur-md p-8 rounded-3xl shadow-xl w-80" x-data="loginPage()">
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold text-pink-500 flex items-center justify-center">
+        <span>🎁</span>
+        <span class="ml-2">情绪储存罐</span>
+        <span class="ml-2 heart">❤</span>
+      </h1>
+    </div>
+
+    <!-- Email -->
+    <label class="block mb-2">
+      <span class="text-gray-700 font-medium">📧 邮箱</span>
+      <input
+        class="mt-1 w-full px-4 py-2 border border-pink-200 rounded-lg focus:ring focus:ring-pink-200 focus:outline-none"
+        x-model="email"
+        type="email"
+        placeholder="你的邮箱" />
+    </label>
+
+    <!-- Password -->
+    <label class="block mb-4">
+      <span class="text-gray-700 font-medium">🔒 密码</span>
+      <input
+        class="mt-1 w-full px-4 py-2 border border-pink-200 rounded-lg focus:ring focus:ring-pink-200 focus:outline-none"
+        x-model="password"
+        type="password"
+        placeholder="输入密码" />
+    </label>
+
+    <!-- Remember Email -->
+    <div class="flex items-center mb-4">
+      <input id="remember" type="checkbox" class="mr-2" x-model="remember"/>
+      <label for="remember" class="text-sm text-gray-600">记住我的邮箱</label>
+    </div>
+
+    <!-- Buttons -->
+    <button
+      class="w-full py-2 mb-2 bg-gradient-to-r from-pink-400 to-purple-400 text-white rounded-lg hover:from-pink-500 hover:to-purple-500 shadow transition"
+      @click="login">
+      登录
+    </button>
+    <button
+      class="w-full py-2 mb-4 bg-white border border-pink-300 text-pink-500 rounded-lg hover:bg-pink-50 shadow"
+      @click="register">
+      注册
+    </button>
+
+    <!-- Error Message -->
+    <p class="text-center text-red-500 mb-2" x-text="err"></p>
+  </div>
+
+  <script>
+    const API = 'http://localhost:3001/api';
+    const tokenKey = 'ej_token';
+    const emailKey = 'ej_email';
+
+    function loginPage() {
+      return {
+        // 页面加载时，尝试从 localStorage 取回上次记住的邮箱
+        email: localStorage.getItem(emailKey) || '',
+        password: '',
+        remember: !!localStorage.getItem(emailKey),
+        err: '',
+
+        async login() {
+          await this._submit('login');
+        },
+        async register() {
+          await this._submit('register');
+        },
+        async _submit(path) {
+          if (!this.email || !this.password) {
+            this.err = '邮箱和密码不能为空';
+            return;
+          }
+          this.err = '';
+          const res = await fetch(`${API}/auth/${path}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: this.email,
+              password: this.password
+            })
+          });
+          const data = await res.json();
+          if (data.token) {
+            // 存 token
+            localStorage.setItem(tokenKey, data.token);
+            // 根据 remember 复选框决定是否记住邮箱
+            if (this.remember) {
+              localStorage.setItem(emailKey, this.email);
+            } else {
+              localStorage.removeItem(emailKey);
+            }
+            // 跳转首页
+            location.href = 'index.html';
+          } else if (path === 'register' && data.ok) {
+            // 注册后自动登录
+            await this._submit('login');
+          } else {
+            this.err = data.error || '请求失败';
+          }
+        }
+      };
+    }
+  </script>
+</body>
+</html>

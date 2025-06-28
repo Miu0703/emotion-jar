@@ -1,0 +1,4 @@
+body { font-family: system-ui, sans-serif; margin: 2rem; }
+.container { max-width: 600px; margin: auto; }
+textarea { width: 100%; }
+pre { background: #f4f4f4; padding: 1rem; }

@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@huggingface/inference": "^4.1.0",
+    "cross-fetch": "^4.1.0"
+  }
+}

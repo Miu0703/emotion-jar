@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>情绪储存罐</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js -->
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <style>
+    /* 心形和粉色按钮 */
+    .heart { color: #f472b6; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100 min-h-screen font-sans text-gray-800" x-data="app()">
+
+  <div class="max-w-3xl mx-auto py-12 px-4">
+
+    <!-- 头部 -->
+    <div class="flex justify-between items-center mb-10">
+      <h1 class="text-4xl font-extrabold text-pink-500 flex items-center">
+        <span>🎁</span>
+        <span class="ml-2">情绪储存罐</span>
+        <span class="ml-1 heart">❤</span>
+      </h1>
+      <button class="bg-pink-200 hover:bg-pink-300 text-pink-700 px-4 py-2 rounded-full shadow" @click="logout">
+        退出
+      </button>
+    </div>
+
+    <!-- 新建罐子 -->
+    <div class="bg-white bg-opacity-90 backdrop-blur-md p-6 rounded-2xl shadow-lg mb-10">
+      <h2 class="text-2xl font-semibold text-purple-600 mb-4">➕ 创建新罐子</h2>
+      <div class="flex flex-col sm:flex-row gap-4">
+        <input
+          class="flex-1 border-2 border-pink-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-pink-200 focus:outline-none"
+          x-model="newJarName"
+          placeholder="罐子名称"/>
+        <select x-model="newMode"
+                class="border-2 border-purple-200 rounded-xl px-2 py-2"
+                title="选择模式: 自己 / 伴侣 / 共享">
+          <option value="self">🔒 给自己</option>
+          <option value="partner">🗝️ 给伴侣</option>
+          <option value="shared">🤝 两人共享</option>
+        </select>
+        <select x-model="newPersona"
+                class="border-2 border-purple-200 rounded-xl px-2 py-2">
+          <option value="gentle_sister">🌸 温柔大姐姐</option>
+          <option value="parent_empathy">🤱 父母般温暖</option>
+          <option value="strict_mentor">🍃 严格师傅</option>
+          <option value="playful_friend">🎈 活泼朋友</option>
+          <option value="wise_philosopher">📜 智者哲人</option>
+        </select>
+        <input
+                class="flex-1 border-2 border-pink-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-pink-200 focus:outline-none"
+                x-model="newPurpose"
+                placeholder="我想获得怎样的鼓励？（选填）" />
+        <input
+          class="flex-1 border-2 border-purple-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-purple-200 focus:outline-none"
+          x-model="partner"
+          placeholder="伴侣邮箱（可选共享）" />
+        <button
+          class="btn-primary flex-shrink-0"
+          @click="createJar">
+          创建
+        </button>
+      </div>
+    </div>
+
+    <!-- 罐子列表 -->
+    <div class="grid gap-6 md:grid-cols-2 mb-10">
+      <template x-for="j in jars" :key="j.id">
+        <div
+          class="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition cursor-pointer"
+          @click="selectJar(j)">
+          <h3 class="text-xl font-bold text-pink-600" x-text="j.name"></h3>
+          <p class="mt-2 text-gray-500" x-text="j.partner_email ? '与 '+j.partner_email+' 共享' : '仅自己可见'"></p>
+        </div>
+      </template>
+    </div>
+
+    <!-- 抽取与写入抽屉 -->
+    <div
+      x-show="current"
+      class="fixed inset-0 bg-black/40 flex items-end md:items-center justify-center px-4"
+      x-transition>
+      <div
+        class="bg-white w-full md:max-w-lg p-6 rounded-t-3xl md:rounded-3xl shadow-2xl"
+        @click.outside="current=null">
+
+        <h2 class="text-2xl font-bold mb-4 text-purple-600"
+            x-text="current ? '罐子：'+current.name : ''"></h2>
+
+        <textarea
+          class="input w-full h-32 mb-4"
+          x-model="msg"
+          placeholder="写下你的心情…"></textarea>
+
+        <label class="block mb-3 text-sm text-gray-600">
+          附件：
+          <input type="file" id="fileInput" accept="image/*,audio/*">
+        </label>
+        <p class="text-xs text-gray-400 mb-4">可上传 jpg/png/gif 或 mp3/m4a/wav</p>
+
+        <label class="block mb-4 text-sm text-gray-600">
+          未来开启时间：
+          <input
+            type="datetime-local"
+            class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-200 focus:outline-none"
+            x-model="openAt">
+        </label>
+
+        <div class="flex gap-4 mb-4">
+          <button class="btn-primary flex-1" x-show="canAdd" @click="addMsg">放进罐子</button>
+          <button class="btn-secondary flex-1" @click="drawMsg">抽一条</button>
+          <button class="btn-secondary flex-1" x-show="canDel||canAdd" @click="showShelf = true">展示架</button>
+          <button class="btn-secondary flex-1" @click="generateAI">AI 陪伴</button>
+        </div>
+        <!-- 展示架弹窗 -->
+        <div x-show="showShelf" class="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md" @click.outside="showShelf=false">
+            <h3 class="text-xl font-bold mb-4">展示架</h3>
+            <div class="flex justify-end gap-2 mb-2">
+              <button @click="shelf.sort((a,b)=>b.id-a.id)" class="btn-secondary text-sm">新 → 旧</button>
+              <button @click="shelf.sort((a,b)=>a.id-b.id)" class="btn-secondary text-sm">旧 → 新</button>
+            </div>  
+              <div class="max-h-[60vh] overflow-y-auto">
+                <template x-for="m in shelf" :key="m.id">
+                  <div class="mb-4">
+                    <p x-text="m.content"></p>
+                    <img x-show="m.image_url"
+                          :src="host+m.image_url"
+                          class="max-w-full max-h-48 object-contain rounded mb-2" />
+                    <audio x-show="m.voice_url"
+                            controls
+                            :src="host+m.voice_url"
+                            class="w-full mb-2"></audio>
+
+                    <div class="flex gap-2 mt-2">
+                      <button @click="putBack(m.id)" class="btn-secondary">放回罐子</button>
+                      <button @click="deleteMsg(m.id)" class="btn-danger">删除</button>
+                    </div>
+                  </div>
+                </template>
+              </div>
+          </div>
+        </div>
+        <div
+          class="whitespace-pre-wrap bg-gray-50 p-4 rounded-xl text-gray-700
+                max-h-[50vh] overflow-y-auto"
+          x-html="drawn || '— 结果会显示在这里 —'"></div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script src="main.js"></script>
+
+  <style>
+    .input {
+      @apply border-2 border-pink-100 rounded-xl px-4 py-3 mb-2 focus:ring-2 focus:ring-pink-100 focus:outline-none;
+    }
+    .btn-primary {
+      @apply bg-gradient-to-r from-pink-400 to-purple-400 text-white font-semibold py-2 rounded-xl shadow-lg hover:from-pink-500 hover:to-purple-500 transition;
+    }
+    .btn-secondary {
+      @apply bg-white border-2 border-purple-300 text-purple-600 font-semibold py-2 rounded-xl shadow hover:bg-purple-50 transition;
+    }
+    .btn-danger { @apply bg-red-500 text-white rounded-xl px-4 py-2 hover:bg-red-600 transition; }
+
+  </style>
+</body>
+</html>
