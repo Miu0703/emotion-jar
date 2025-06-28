@@ -1,4 +1,5 @@
-const API = 'http://localhost:3001/api';
+//const API = 'http://localhost:3001/api';
+const API = "https://emotion-jar-60yp.onrender.com";
 const tokenKey = 'ej_token';
 
 function authHeader () {
@@ -15,7 +16,9 @@ function app () {
     drawnId: null,
     showShelf: false,
     shelf: [],
-    host: 'http://localhost:3001',
+    //host: 'http://localhost:3001',
+    host: "http://localhost:3001",
+
     jars: [], current: null,
     newJarName: '', partner: '', newPurpose:'',
     newPersona:'gentle_sister',
