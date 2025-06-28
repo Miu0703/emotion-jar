@@ -17,7 +17,7 @@ function app () {
     showShelf: false,
     shelf: [],
     //host: 'http://localhost:3001',
-    host: "http://localhost:3001",
+    host: "https://emotion-jar-60yp.onrender.com",
 
     jars: [], current: null,
     newJarName: '', partner: '', newPurpose:'',
